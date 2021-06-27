@@ -1,13 +1,11 @@
 package dorian.codes.bottino
 
-import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.runApplication
 
 @SpringBootApplication
-open class BottinoApplication {
-	companion object {
-		@JvmStatic fun main(args: Array<String>) {
-			SpringApplication.run(BottinoApplication::class.java, *args)
-		}
-	}
+class BottinoApplication
+
+fun main(args: Array<String>) {
+	runApplication<BottinoApplication>(*args)
 }

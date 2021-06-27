@@ -12,4 +12,9 @@ class PingController {
     fun keepAlive(): ResponseEntity<String> {
         return ResponseEntity("ALIVE AND WELL!", HttpStatus.OK)
     }
+
+    @GetMapping("/")
+    fun home(): ResponseEntity<String> {
+        return ResponseEntity("Homepage", HttpStatus.OK)
+    }
 }
