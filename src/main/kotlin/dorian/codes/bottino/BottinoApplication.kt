@@ -38,6 +38,6 @@ fun main(args: Array<String>) {
         .flatMap { channel -> channel.createMessage("Pong!") }
         .subscribe()
 
-    client?.onDisconnect()?.block()
+    //client?.onDisconnect()?.block()
     runApplication<BottinoApplication>(*args)
 }
