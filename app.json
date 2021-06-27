@@ -1,0 +1,5 @@
+{
+  "name": "Bottino",
+  "description": "chatbot for discord.",
+  "addons": [ "heroku-postgresql" ]
+}
