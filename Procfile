@@ -1,1 +1,1 @@
-web: java -jar build/libs/bottino-0.0.1-SNAPSHOT.jar
+web: java -jar build/libs/bottino-1.0.jar
