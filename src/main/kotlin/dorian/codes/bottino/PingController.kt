@@ -17,6 +17,6 @@ class PingController {
 
     @RequestMapping("/")
     fun home(): ResponseEntity<String> {
-        return ResponseEntity("Homepage", HttpStatus.OK)
+        return ResponseEntity(getQuote().toString(), HttpStatus.OK)
     }
 }
