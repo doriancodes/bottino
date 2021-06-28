@@ -10,6 +10,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.web.reactive.function.client.WebClient
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
+import java.util.function.Function
 
 
 @SpringBootApplication
@@ -18,9 +21,10 @@ class BottinoApplication
 fun main(args: Array<String>) {
     val token = System.getenv()["TOKEN"]!!
 
-    val commands: Map<String, (MessageCreateEvent) -> Message?> = mapOf("ping" to { event: MessageCreateEvent ->
+    /*
+    val commands: Map<String, Command> = mapOf("ping" to { event: MessageCreateEvent ->
         event.message.channel.block()?.createMessage("Pong!")?.block()
-    })
+    })*/
 
     val client: GatewayDiscordClient? = DiscordClientBuilder.create(token)
         .build()
@@ -51,30 +55,14 @@ fun main(args: Array<String>) {
         }
         .subscribe()*/
 
-    client.eventDispatcher.on(MessageCreateEvent::class.java) // subscribe is like block, in that it will *request* for action
-        // to be done, but instead of blocking the thread, waiting for it
-        // to finish, it will just execute the results asynchronously.
-        .subscribe { event: MessageCreateEvent ->
-            // 3.1 Message.getContent() is a String
-            val content = event.message.content
-            for ((key, value) in commands) {
-                // We will be using ! as our "prefix" to any command in the system.
-                if (content.startsWith("!$key")) {
-                    value
-                    break
-                }
-            }
-        }
 
-
-    /*
     client.eventDispatcher.on(MessageCreateEvent::class.java)
         .map(MessageCreateEvent::getMessage)
         .filter { message -> message.author.map { user -> !user.isBot }.orElse(false) }
         .filter { message -> message.content.toLowerCase() == "!ping" }
         .flatMap(Message::getChannel)
         .flatMap { channel -> channel.createMessage("Pong!") }
-        .subscribe()*/
+        .subscribe()
 
     //client?.onDisconnect()?.block()
     runApplication<BottinoApplication>(*args)
@@ -86,6 +74,8 @@ fun getQuote(): WebClient? {
 }
 
 internal interface Command {
-    fun execute(event: MessageCreateEvent?)
+    // Since we are expecting to do reactive things in this method, like
+    // send a message, then this method will also return a reactive type.
+    fun execute(event: MessageCreateEvent?): Mono<Void?>?
 }
 
