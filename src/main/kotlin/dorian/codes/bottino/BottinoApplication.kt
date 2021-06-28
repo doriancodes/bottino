@@ -1,5 +1,6 @@
 package dorian.codes.bottino
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import discord4j.core.DiscordClientBuilder
 import discord4j.core.GatewayDiscordClient
 import discord4j.core.`object`.entity.Message
@@ -9,9 +10,15 @@ import discord4j.core.event.domain.message.MessageCreateEvent
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
+import org.springframework.core.ParameterizedTypeReference
+import org.springframework.http.MediaType
 import org.springframework.web.reactive.function.client.WebClient
-import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import java.util.*
+import java.util.stream.Collectors
+
+
+
 
 
 @SpringBootApplication
@@ -71,12 +78,27 @@ fun main(args: Array<String>) {
 fun getQuote(): String? {
 
     val webClient = WebClient.create()
+
+    val response = webClient
+        .get()
+        .uri("https://zenquotes.io/api/random")
+        .accept(MediaType.APPLICATION_JSON)
+        .retrieve()
+        .bodyToMono(Array<Any>::class.java).log()
+
+    val objects = response.block()
+    val mapper = ObjectMapper()
+    return Arrays.stream(objects)
+        .map { `object` -> mapper.convertValue(`object`, Quote::class.java) }
+        .collect(Collectors.toList())[0].formatQuote()
+
+    /*
     return webClient.get()
         .uri("https://zenquotes.io/api/random")
         .retrieve()
-        .bodyToMono(Quotes::class.java)
+        .bodyToMono<List<Quote>>(object : ParameterizedTypeReference<List<Quote?>?>() {})
         .block()?.list?.get(0)?.formatQuote()
-
+*/
 
         //.reduce()
         //.block()!!
@@ -84,6 +106,8 @@ fun getQuote(): String? {
 
 
 }
+
+
 
 private fun Quote.formatQuote(): String = "$q - $a"
 
