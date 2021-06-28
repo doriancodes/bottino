@@ -73,10 +73,24 @@ fun getQuote(): String? {
     return webClient.get()
         .uri("https://zenquotes.io/api/random")
         .retrieve()
-        .bodyToMono(String::class.java)
-        .block()
+        .bodyToMono(Quotes::class.java)
+        .block()!!
+        .list[0].formatQuote()
+
 
 }
+
+private fun Quote.formatQuote(): String = "$q - $a"
+
+data class Quotes(
+    val list: List<Quote>
+)
+
+data class Quote(
+    val q: String,
+    val a: String,
+    val h: String
+)
 
 internal interface Command {
     // Since we are expecting to do reactive things in this method, like
