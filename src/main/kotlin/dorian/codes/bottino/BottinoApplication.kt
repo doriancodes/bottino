@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.web.reactive.function.client.WebClient
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 
@@ -74,8 +75,12 @@ fun getQuote(): String? {
         .uri("https://zenquotes.io/api/random")
         .retrieve()
         .bodyToMono(Quotes::class.java)
-        .block()!!
-        .list[0].formatQuote()
+        .block()?.list?.get(0)?.formatQuote()
+
+
+        //.reduce()
+        //.block()!!
+        //.list[0].formatQuote()
 
 
 }
