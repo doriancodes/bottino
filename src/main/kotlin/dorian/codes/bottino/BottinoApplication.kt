@@ -9,6 +9,8 @@ import discord4j.core.event.domain.message.MessageCreateEvent
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
+import org.springframework.http.HttpMethod
+import org.springframework.web.reactive.function.client.ClientResponse
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -69,8 +71,9 @@ fun main(args: Array<String>) {
 }
 
 @Bean
-fun getQuote(): WebClient? {
-    return WebClient.create("https://zenquotes.io/api/random")
+fun getQuote(): WebClient.ResponseSpec {
+    return WebClient.builder().baseUrl("https://zenquotes.io/api/random").build().method(HttpMethod.GET).retrieve()
+
 }
 
 internal interface Command {
