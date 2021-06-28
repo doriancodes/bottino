@@ -7,18 +7,16 @@ import discord4j.core.`object`.entity.Message
 import discord4j.core.`object`.entity.User
 import discord4j.core.event.domain.lifecycle.ReadyEvent
 import discord4j.core.event.domain.message.MessageCreateEvent
+import org.reactivestreams.Publisher
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
-import org.springframework.core.ParameterizedTypeReference
-import org.springframework.http.MediaType
 import org.springframework.web.reactive.function.client.WebClient
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.util.*
-import java.util.stream.Collectors
-
-
-
+import java.util.function.Function
+import java.util.function.Predicate
 
 
 @SpringBootApplication
@@ -61,14 +59,36 @@ fun main(args: Array<String>) {
         }
         .subscribe()*/
 
+    val actions = mapOf(
+        "!ping" to "Pong!",
+        "!quote" to getQuote()
+    )
+
 
     client.eventDispatcher.on(MessageCreateEvent::class.java)
         .map(MessageCreateEvent::getMessage)
         .filter { message -> message.author.map { user -> !user.isBot }.orElse(false) }
-        .filter { message -> message.content.toLowerCase() == "!ping" }
+        .filter { message -> actions.keys.contains(message.content.lowercase()) }
         .flatMap(Message::getChannel)
-        .flatMap { channel -> channel.createMessage("Pong!") }
+        .flatMap { channel -> channel.createMessage(actions.get(channel.lastMessage.block()!!.content))
+           // channel.createMessage(getQuote())
+        }
         .subscribe()
+
+    /*
+    client.eventDispatcher.on(MessageCreateEvent::class.java) // 3.1 Message.getContent() is a String
+        .flatMap { event: MessageCreateEvent ->
+            Mono.just(event.message.content)
+                .flatMap{ content: String ->
+                    Flux.fromIterable(actions.entries) // We will be using ! as our "prefix" to any command in the system.
+                        .filter(Predicate<Map.Entry<String, String?>> { entry -> content.startsWith('!' + entry.key) })
+                        .flatMap(Function<Map.Entry<String, String?>, Publisher<*>> { entry ->
+                            event.message.channel.block()!!.createMessage(entry.value)
+                        })
+                        .next()
+                }
+        }
+        .subscribe()*/
 
     //client?.onDisconnect()?.block()
     runApplication<BottinoApplication>(*args)
@@ -77,43 +97,26 @@ fun main(args: Array<String>) {
 @Bean
 fun getQuote(): String? {
 
+
+    val mapper = ObjectMapper()
     val webClient = WebClient.create()
 
-    val response = webClient
-        .get()
-        .uri("https://zenquotes.io/api/random")
-        .accept(MediaType.APPLICATION_JSON)
-        .retrieve()
-        .bodyToMono(Array<Any>::class.java).log()
 
-    val objects = response.block()
-    val mapper = ObjectMapper()
-    return Arrays.stream(objects)
-        .map { `object` -> mapper.convertValue(`object`, Quote::class.java) }
-        .collect(Collectors.toList())[0].formatQuote()
-
-    /*
-    return webClient.get()
+    val response = webClient.get()
         .uri("https://zenquotes.io/api/random")
         .retrieve()
-        .bodyToMono<List<Quote>>(object : ParameterizedTypeReference<List<Quote?>?>() {})
-        .block()?.list?.get(0)?.formatQuote()
-*/
+        .bodyToMono(String::class.java)
+        .block()!!.replace("[", "").replace("]", "")
 
-        //.reduce()
-        //.block()!!
-        //.list[0].formatQuote()
+    return mapper.findAndRegisterModules().readValue<Quote>(response, Quote::class.java).formatQuote()
+
 
 
 }
 
 
-
 private fun Quote.formatQuote(): String = "$q - $a"
 
-data class Quotes(
-    val list: List<Quote>
-)
 
 data class Quote(
     val q: String,
