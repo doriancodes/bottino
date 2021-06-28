@@ -44,6 +44,7 @@ fun main(args: Array<String>) {
             )
         }
 
+    /*
     client.eventDispatcher.on(MessageCreateEvent::class.java)
         .flatMap { event: MessageCreateEvent ->
             Mono.justOrEmpty(event.message.content)
@@ -54,16 +55,16 @@ fun main(args: Array<String>) {
                         .next()
                 }
         }
-        .subscribe()
+        .subscribe()*/
 
-    /*
+
     client.eventDispatcher.on(MessageCreateEvent::class.java)
         .map(MessageCreateEvent::getMessage)
         .filter { message -> message.author.map { user -> !user.isBot }.orElse(false) }
         .filter { message -> message.content.toLowerCase() == "!ping" }
         .flatMap(Message::getChannel)
         .flatMap { channel -> channel.createMessage("Pong!") }
-        .subscribe()*/
+        .subscribe()
 
     //client?.onDisconnect()?.block()
     runApplication<BottinoApplication>(*args)
