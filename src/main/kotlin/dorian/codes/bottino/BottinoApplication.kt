@@ -17,26 +17,21 @@ import javax.security.auth.login.LoginException
 @SpringBootApplication
 class BottinoApplication: ListenerAdapter() {
     override fun onMessageReceived(event: MessageReceivedEvent) {
-        val message: Message = event.message //The message that was received.
+        val message: Message = event.message
 
-        val channel: MessageChannel = event.channel //This is the MessageChannel that the message was sent to.
+        val channel: MessageChannel = event.channel
 
-        val msg: String = message.contentDisplay //This returns a human readable version of the Message. Similar to
-        if (msg == "!ping") {
-            //This will send a message, "pong!", by constructing a RestAction and "queueing" the action with the Requester.
-            // By calling queue(), we send the Request to the Requester which will send it to discord. Using queue() or any
-            // of its different forms will handle ratelimiting for you automatically!
-            channel.sendMessage("pong!").queue()
-        } else if(msg == "!quote") {
-            channel.sendMessage(getQuote()!!).queue()
-        }
+        val msg: String = message.contentDisplay
+
+       when (msg) {
+           "!ping" -> channel.sendMessage("pong!").queue()
+           "!quote" -> channel.sendMessage(getQuote()!!).queue()
+           "!info" -> channel.sendMessage(getInfo()).queue()
+       }
 
     }
 
     companion object {
-        /**
-         * This is the method where the program starts.
-         */
 
         fun startBot(token: String) {
             try {
@@ -75,7 +70,6 @@ fun main(args: Array<String>) {
 @Bean
 fun getQuote(): String? {
 
-
     val mapper = ObjectMapper()
     val webClient = WebClient.create()
 
@@ -99,3 +93,10 @@ data class Quote(
     val a: String,
     val h: String
 )
+
+fun getInfo() = """
+    Summary of the commands:
+    !ping : returns '!pong'
+    !quote : gets a random quote
+    !info : provides info
+""".trimIndent()
