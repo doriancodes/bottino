@@ -24,7 +24,7 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
 	implementation("net.dv8tion:JDA:4.2.0_229")
-
+	implementation(files("ab-1.0.7.jar"))
 }
 
 tasks.withType<KotlinCompile> {

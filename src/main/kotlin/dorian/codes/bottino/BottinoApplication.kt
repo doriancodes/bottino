@@ -7,6 +7,9 @@ import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
+import org.alicebot.ab.Bot
+import org.alicebot.ab.Chat
+import org.alicebot.ab.configuration.BotConfiguration
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
@@ -15,7 +18,7 @@ import javax.security.auth.login.LoginException
 
 
 @SpringBootApplication
-class BottinoApplication: ListenerAdapter() {
+class BottinoApplication : ListenerAdapter() {
     override fun onMessageReceived(event: MessageReceivedEvent) {
         val message: Message = event.message
 
@@ -23,11 +26,13 @@ class BottinoApplication: ListenerAdapter() {
 
         val msg: String = message.contentDisplay
 
-       when (msg) {
-           "!ping" -> channel.sendMessage("pong!").queue()
-           "!quote" -> channel.sendMessage(getQuote()!!).queue()
-           "!info" -> channel.sendMessage(getInfo()).queue()
-       }
+        when (msg) {
+            "!ping" -> channel.sendMessage("pong!").queue()
+            "!quote" -> channel.sendMessage(getQuote()!!).queue()
+            "!conversation" -> startConversationalBot(event)
+            "!info" -> channel.sendMessage(getInfo()).queue()
+
+        }
 
     }
 
@@ -66,7 +71,6 @@ fun main(args: Array<String>) {
 }
 
 
-
 @Bean
 fun getQuote(): String? {
 
@@ -100,3 +104,31 @@ fun getInfo() = """
     !quote : gets a random quote
     !info : provides info
 """.trimIndent()
+
+@Bean
+fun startConversationalBot(event: MessageReceivedEvent) {
+    event.channel.sendMessage("Starting a conversation. To quit this mode use command '!quit'").queue()
+
+    val bot = Bot(
+        BotConfiguration.builder()
+            .name("alice")
+            .path("src/main/resources")
+            .build()
+    )
+
+    val chatSession = Chat(bot)
+
+    when (event.message.contentDisplay) {
+        "!quit" -> {
+            event.channel.sendMessage("Quitting conversation.").queue()
+            bot.writeQuit()
+        }
+        else -> {
+            val response = chatSession.multisentenceRespond(event.message.contentDisplay)
+            event.channel.sendMessage(response).queue()
+        }
+    }
+
+
+
+}
