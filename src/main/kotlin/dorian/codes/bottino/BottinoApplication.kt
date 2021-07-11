@@ -1,98 +1,76 @@
 package dorian.codes.bottino
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import discord4j.core.DiscordClientBuilder
-import discord4j.core.GatewayDiscordClient
-import discord4j.core.`object`.entity.Message
-import discord4j.core.`object`.entity.User
-import discord4j.core.event.domain.lifecycle.ReadyEvent
-import discord4j.core.event.domain.message.MessageCreateEvent
-import org.reactivestreams.Publisher
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.JDABuilder
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.MessageChannel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.web.reactive.function.client.WebClient
-import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
-import java.util.*
-import java.util.function.Function
-import java.util.function.Predicate
+import javax.security.auth.login.LoginException
 
 
 @SpringBootApplication
-class BottinoApplication
+class BottinoApplication: ListenerAdapter() {
+    override fun onMessageReceived(event: MessageReceivedEvent) {
+        val message: Message = event.message //The message that was received.
+
+        val channel: MessageChannel = event.channel //This is the MessageChannel that the message was sent to.
+
+        val msg: String = message.contentDisplay //This returns a human readable version of the Message. Similar to
+        if (msg == "!ping") {
+            //This will send a message, "pong!", by constructing a RestAction and "queueing" the action with the Requester.
+            // By calling queue(), we send the Request to the Requester which will send it to discord. Using queue() or any
+            // of its different forms will handle ratelimiting for you automatically!
+            channel.sendMessage("pong!").queue()
+        } else if(msg == "!quote") {
+            channel.sendMessage(getQuote()!!).queue()
+        }
+
+    }
+
+    companion object {
+        /**
+         * This is the method where the program starts.
+         */
+
+        fun startBot(token: String) {
+            try {
+                val jda: JDA =
+                    JDABuilder.createDefault(token) // The token of the account that is logging in.
+                        .addEventListeners(BottinoApplication()) // An instance of a class that will handle events.
+                        .build()
+                jda.awaitReady() // Blocking guarantees that JDA will be completely loaded.
+                println("Finished Building JDA!")
+            } catch (e: LoginException) {
+                //If anything goes wrong in terms of authentication, this is the exception that will represent it
+                e.printStackTrace()
+            } catch (e: InterruptedException) {
+                //Due to the fact that awaitReady is a blocking method, one which waits until JDA is fully loaded,
+                // the waiting can be interrupted. This is the exception that would fire in that situation.
+                //As a note: in this extremely simplified example this will never occur. In fact, this will never occur unless
+                // you use awaitReady in a thread that has the possibility of being interrupted (async thread usage and interrupts)
+                e.printStackTrace()
+            }
+        }
+
+    }
+
+}
+
 
 fun main(args: Array<String>) {
     val token = System.getenv()["TOKEN"]!!
 
-    /*
-    val commands: Map<String, Command> = mapOf("ping" to { event: MessageCreateEvent ->
-        event.message.channel.block()?.createMessage("Pong!")?.block()
-    })*/
-
-    val client: GatewayDiscordClient? = DiscordClientBuilder.create(token)
-        .build()
-        .login()
-        .block()
-
-    client!!.eventDispatcher.on(ReadyEvent::class.java)
-        .subscribe { event: ReadyEvent ->
-            val self: User = event.self
-            println(
-                java.lang.String.format(
-                    "Logged in as %s#%s", self.username, self.discriminator
-                )
-            )
-        }
-
-    /*
-
-    client.eventDispatcher.on(MessageCreateEvent::class.java)
-        .flatMap { event: MessageCreateEvent ->
-            Mono.justOrEmpty(event.message.content)
-                .flatMap { content: String ->
-                    Flux.fromIterable<Map.Entry<String, Command>>(commands.entries)// We will be using ! as our "prefix" to any command in the system.
-                        .filter { entry: Map.Entry<String, Command> -> content.startsWith('!' + entry.key) }
-                        .flatMap{ entry: Map.Entry<String, Command>  -> entry.value.execute(event) }
-                        .next()
-                }
-        }
-        .subscribe()*/
-
-    val actions = mapOf(
-        "!ping" to "Pong!",
-        "!quote" to getQuote()
-    )
-
-
-    client.eventDispatcher.on(MessageCreateEvent::class.java)
-        .map(MessageCreateEvent::getMessage)
-        .filter { message -> message.author.map { user -> !user.isBot }.orElse(false) }
-        .filter { message -> actions.keys.contains(message.content.lowercase()) }
-        .flatMap(Message::getChannel)
-        .flatMap { channel -> channel.createMessage(actions.get(channel.lastMessage.block()!!.content))
-           // channel.createMessage(getQuote())
-        }
-        .subscribe()
-
-    /*
-    client.eventDispatcher.on(MessageCreateEvent::class.java) // 3.1 Message.getContent() is a String
-        .flatMap { event: MessageCreateEvent ->
-            Mono.just(event.message.content)
-                .flatMap{ content: String ->
-                    Flux.fromIterable(actions.entries) // We will be using ! as our "prefix" to any command in the system.
-                        .filter(Predicate<Map.Entry<String, String?>> { entry -> content.startsWith('!' + entry.key) })
-                        .flatMap(Function<Map.Entry<String, String?>, Publisher<*>> { entry ->
-                            event.message.channel.block()!!.createMessage(entry.value)
-                        })
-                        .next()
-                }
-        }
-        .subscribe()*/
-
-    //client?.onDisconnect()?.block()
+    BottinoApplication.startBot(token)
     runApplication<BottinoApplication>(*args)
 }
+
+
 
 @Bean
 fun getQuote(): String? {
@@ -111,9 +89,7 @@ fun getQuote(): String? {
     return mapper.findAndRegisterModules().readValue<Quote>(response, Quote::class.java).formatQuote()
 
 
-
 }
-
 
 private fun Quote.formatQuote(): String = "$q - $a"
 
@@ -123,10 +99,3 @@ data class Quote(
     val a: String,
     val h: String
 )
-
-internal interface Command {
-    // Since we are expecting to do reactive things in this method, like
-    // send a message, then this method will also return a reactive type.
-    fun execute(event: MessageCreateEvent?): Mono<Void?>?
-}
-

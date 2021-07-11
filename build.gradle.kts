@@ -13,6 +13,7 @@ java.sourceCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
 	mavenCentral()
+	jcenter()
 }
 
 dependencies {
@@ -21,8 +22,9 @@ dependencies {
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
-	implementation("com.discord4j:discord4j-core:3.1.5")
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
+	implementation("net.dv8tion:JDA:4.2.0_229")
+
 }
 
 tasks.withType<KotlinCompile> {
